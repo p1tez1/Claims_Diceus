@@ -1,0 +1,89 @@
+name: Deploy to Azure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: Build and test release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            Directory.Packages.props
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/claims-ui/package-lock.json
+      - name: Restore backend
+        run: dotnet restore backend/ClaimsModule.sln
+      - name: Build backend
+        run: dotnet build backend/ClaimsModule.sln --configuration Release --no-restore
+      - name: Test backend
+        run: dotnet test backend/ClaimsModule.sln --configuration Release --no-build
+      - name: Publish backend
+        run: dotnet publish backend/src/ClaimsModule.API/ClaimsModule.API.csproj --configuration Release --no-build --output artifacts/backend
+      - name: Install frontend dependencies
+        working-directory: frontend/claims-ui
+        run: npm ci
+      - name: Test frontend
+        working-directory: frontend/claims-ui
+        run: npm run test:ci -- --no-progress
+      - name: Build frontend production bundle
+        working-directory: frontend/claims-ui
+        run: npm run build -- --configuration production
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            artifacts/backend
+            frontend/claims-ui/dist/claims-ui/browser
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy existing Azure resources
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+      - name: Deploy backend to diceus
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: diceus
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release/artifacts/backend
+      - name: Smoke test backend health
+        shell: bash
+        run: |
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --max-time 15 \
+              https://diceus-adfdbwarg6crc0b8.polandcentral-01.azurewebsites.net/health; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+      - name: Deploy frontend to Diceus Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: release/frontend/claims-ui/dist/claims-ui/browser
+          skip_app_build: true

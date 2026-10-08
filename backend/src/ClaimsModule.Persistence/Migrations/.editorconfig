@@ -1,0 +1,3 @@
+# EF-generated migration code is intentionally kept reproducible.
+[*.cs]
+generated_code = true

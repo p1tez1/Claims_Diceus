@@ -1,0 +1,38 @@
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.nupkg
+TestResults/
+.vs/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local configuration and tooling
+.env
+.dotnet/
+uploads/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# deployment artifacts
+publish/
+**/publish/
+publish.zip
+**/publish.zip
+logs.zip
+migrate.sql
+docs/spec/
+docs/spec/

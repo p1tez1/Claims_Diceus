@@ -1,0 +1,12 @@
+:host { display:block; min-height:100vh; }
+.app-header { position:sticky; top:0; z-index:20; box-shadow:0 1px 4px rgb(15 23 42 / 14%); }
+mat-toolbar { min-height:72px; padding:0 max(2rem, calc((100vw - 1440px) / 2)); background:var(--claims-surface); color:var(--claims-text); gap:1.25rem; }
+.brand { display:flex; align-items:center; gap:.75rem; color:inherit; text-decoration:none; }
+.brand-mark { display:grid; place-items:center; width:2.5rem; height:2.5rem; border-radius:.65rem; background:var(--claims-primary); color:white; font-size:.8rem; font-weight:800; letter-spacing:.08em; }
+.brand strong,.brand small,.user-summary span,.user-summary small { display:block; line-height:1.25; }
+.brand small,.user-summary small { color:var(--claims-text-muted); font-size:.72rem; }
+.toolbar-spacer { flex:1; }
+.user-summary { text-align:right; font-size:.9rem; }
+.role-switcher { width:160px; font-size:.85rem; }
+.app-content { width:min(1440px, calc(100% - 4rem)); margin:0 auto; padding:2.25rem 0 4rem; }
+@media (max-width: 800px) { mat-toolbar{padding:0 1rem}.user-summary{display:none}.app-content{width:calc(100% - 2rem)}.role-switcher{width:135px} }

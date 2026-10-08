@@ -1,0 +1,13 @@
+.git
+.github
+.dotnet
+.env
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+**/coverage
+TestResults
+uploads
+

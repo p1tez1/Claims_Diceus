@@ -1,0 +1,27 @@
+<header class="app-header">
+  <mat-toolbar>
+    <a class="brand" routerLink="/claims" aria-label="Claims Hub home">
+      <span class="brand-mark" aria-hidden="true">CH</span>
+      <span><strong>Claims Hub</strong><small>Claims management</small></span>
+    </a>
+    <span class="toolbar-spacer"></span>
+    @if (auth.currentUser(); as user) {
+      <div class="user-summary"><span>{{ user.name }}</span><small>{{ user.role }}</small></div>
+    } @else {
+      <div class="user-summary"><span>Connecting…</span><small>Development login</small></div>
+    }
+    <mat-form-field class="role-switcher" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Acting role</mat-label>
+      <mat-select [value]="auth.currentUser()?.role ?? 'Handler'" (selectionChange)="switchRole($event)" aria-label="Switch development role">
+        @for (user of users; track user.username) { <mat-option [value]="user.role">{{ user.role }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+  </mat-toolbar>
+  @if (loading.isLoading()) { <mat-progress-bar mode="indeterminate" aria-label="Request in progress" /> }
+</header>
+<main class="app-content">
+  @if (!connecting() && !auth.isAuthenticated()) {
+    <p role="alert">Login could not be completed.</p><button mat-button (click)="retryLogin()">Retry login</button>
+  }
+  <router-outlet />
+</main>

@@ -1,0 +1,42 @@
+@use '@angular/material' as mat;
+
+$claims-primary-map: (
+  50: #e6f2f4, 100: #bfdee3, 200: #96c8d0, 300: #6cb2bd, 400: #4da1ae,
+  500: #23788b, 600: #1e6c7d, 700: #185c6b, 800: #124d59, 900: #083541,
+  A100: #a9efff, A200: #76e6ff, A400: #43dcff, A700: #2ad8ff,
+  contrast: (50: #0f172a, 100: #0f172a, 200: #0f172a, 300: #0f172a, 400: #0f172a, 500: white, 600: white, 700: white, 800: white, 900: white, A100: #0f172a, A200: #0f172a, A400: #0f172a, A700: #0f172a)
+);
+$claims-accent-map: (
+  50: #fff8e1, 100: #ffecb3, 200: #ffe082, 300: #ffd54f, 400: #ffca28,
+  500: #f5a623, 600: #e79618, 700: #c97d0c, 800: #a96500, 900: #774600,
+  A100: #ffe57f, A200: #ffd740, A400: #ffc400, A700: #ffab00,
+  contrast: (50: #0f172a, 100: #0f172a, 200: #0f172a, 300: #0f172a, 400: #0f172a, 500: #0f172a, 600: #0f172a, 700: white, 800: white, 900: white, A100: #0f172a, A200: #0f172a, A400: #0f172a, A700: #0f172a)
+);
+$claims-primary: mat.m2-define-palette($claims-primary-map, 500, 300, 800);
+$claims-accent: mat.m2-define-palette($claims-accent-map, 500, 300, 800);
+$claims-theme: mat.m2-define-light-theme((color: (primary: $claims-primary, accent: $claims-accent, warn: mat.m2-define-palette(mat.$m2-red-palette)), typography: mat.m2-define-typography-config(), density: 0));
+@include mat.core();
+@include mat.all-component-themes($claims-theme);
+
+:root {
+  --claims-primary: #23788b;
+  --claims-primary-dark: #124d59;
+  --claims-accent: #f5a623;
+  --claims-background: #f4f7f9;
+  --claims-surface: #ffffff;
+  --claims-text: #172033;
+  --claims-text-muted: #64748b;
+  --claims-border: #dce5ea;
+}
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body { margin:0; background:var(--claims-background); color:var(--claims-text); font-family:Roboto, "Segoe UI", Arial, sans-serif; }
+h1 { margin:.15rem 0 .35rem; font-size:2rem; letter-spacing:-.025em; }
+.page-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; margin-bottom:1.5rem; }
+.page-heading p { margin:0; color:var(--claims-text-muted); }
+.page-heading .eyebrow { color:var(--claims-primary); font-size:.75rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.surface { min-height:320px; background:var(--claims-surface); border:1px solid var(--claims-border); border-radius:1rem; box-shadow:0 8px 24px rgb(15 23 42 / 5%); }
+.snackbar-error .mdc-snackbar__surface { background:#991b1b !important; }
+.snackbar-warning .mdc-snackbar__surface { background:#92400e !important; }
+.snackbar-info .mdc-snackbar__surface { background:#1e3a5f !important; }
+@media (max-width:800px) { .page-heading{align-items:flex-start;flex-direction:column} }

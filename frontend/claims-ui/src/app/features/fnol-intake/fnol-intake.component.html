@@ -1,0 +1,20 @@
+<div class="page-heading"><div><p class="eyebrow">First notification of loss</p><h1>Log a new claim</h1><p>Complete the loss, parties, and review steps.</p></div></div>
+<section class="surface intake-surface">
+  <mat-stepper linear #stepper>
+    <mat-step [stepControl]="loss" label="Policy & loss">
+      @if (stepErrors()[0].length) { <div class="step-errors" role="alert"><strong>Review policy and loss details</strong><ul>@for (message of stepErrors()[0]; track $index) { <li>{{ message }}</li> }</ul></div> }
+      <app-loss-step [form]="loss" [serverErrors]="serverErrors()" (policySelected)="selectedPolicy.set($event)" />
+      <div class="step-actions"><button mat-flat-button color="primary" type="button" (click)="next(0)">Continue to parties</button></div>
+    </mat-step>
+    <mat-step [stepControl]="people" label="Parties & risks">
+      @if (stepErrors()[1].length) { <div class="step-errors" role="alert"><strong>Review parties and risk objects</strong><ul>@for (message of stepErrors()[1]; track $index) { <li>{{ message }}</li> }</ul></div> }
+      <app-parties-step [form]="people" [serverErrors]="serverErrors()" />
+      <div class="step-actions"><button mat-button type="button" (click)="stepper.previous()">Back</button><button mat-flat-button color="primary" type="button" (click)="next(1)">Continue to review</button></div>
+    </mat-step>
+    <mat-step [stepControl]="review" label="Reserve & review">
+      @if (stepErrors()[2].length) { <div class="step-errors" role="alert"><strong>Review initial reserve</strong><ul>@for (message of stepErrors()[2]; track $index) { <li>{{ message }}</li> }</ul></div> }
+      <app-review-step [form]="review" [loss]="loss" [parties]="people" [policy]="selectedPolicy()" [serverErrors]="serverErrors()" />
+      <div class="step-actions"><button mat-button type="button" (click)="stepper.previous()">Back</button><button mat-flat-button color="primary" type="button" [disabled]="pending() || loss.invalid || people.invalid || review.invalid" (click)="create()">{{ pending() ? 'Creating claim…' : 'Create Claim' }}</button></div>
+    </mat-step>
+  </mat-stepper>
+</section>

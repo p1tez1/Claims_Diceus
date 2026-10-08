@@ -1,0 +1,12 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["*.{css,js,png,jpg,jpeg,gif,svg,ico,woff,woff2}"]
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "font-src 'self'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  }
+}
+

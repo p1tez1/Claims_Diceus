@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Hangfire.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsModule.Application\ClaimsModule.Application.csproj" />
+  </ItemGroup>
+</Project>
