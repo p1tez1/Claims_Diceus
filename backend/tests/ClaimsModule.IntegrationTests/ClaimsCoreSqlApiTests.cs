@@ -173,6 +173,7 @@ public sealed class ClaimsCoreSqlApiTests(SqlServerFixture fixture) : IClassFixt
         (CreateClaimCommand Request, string Field)[] cases =
         [
             (valid with { LossDate = default }, "LossDate"),
+            (valid with { LossDate = new DateTimeOffset(1899, 12, 31, 23, 59, 59, TimeSpan.Zero) }, "LossDate"),
             (valid with { LossDate = DateTimeOffset.UtcNow.AddDays(1) }, "LossDate"),
             (valid with { LossDescription = "short" }, "LossDescription"),
             (valid with { CauseOfLossCode = "UNKNOWN" }, "CauseOfLossCode"),
@@ -216,6 +217,45 @@ public sealed class ClaimsCoreSqlApiTests(SqlServerFixture fixture) : IClassFixt
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
         }
+    }
+
+    [SqlServerFact]
+    [Trait("Category", "SqlServer")]
+    public async Task DateBoundsReturnFieldKeyed422WithoutReachingTheClaimsQuery()
+    {
+        using var factory = Factory();
+        using var client = factory.CreateClient();
+        await Login(client);
+
+        foreach (var query in new[]
+        {
+            "dateFrom=1900-01-01T00:00:00Z", "dateTo=2100-12-31T23:59:59Z"
+        })
+            (await client.GetAsync("/api/claims?" + query)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        foreach (var (query, field) in new[]
+        {
+            ("dateFrom=1899-12-31", "DateFrom"),
+            ("dateTo=2101-01-01", "DateTo"),
+            ("dateFrom=222222-02-22", "DateFrom"),
+            ("dateFrom=2026-02-23&dateTo=2026-02-22", "DateTo")
+        })
+        {
+            var response = await client.GetAsync("/api/claims?" + query);
+            response.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity, await response.Content.ReadAsStringAsync());
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            body.GetProperty("type").GetString().ShouldBe("ValidationError");
+            body.GetProperty("status").GetInt32().ShouldBe(422);
+            body.GetProperty("errors").TryGetProperty(field, out _).ShouldBeTrue();
+        }
+
+        var oldClaim = Valid() with { LossDate = new DateTimeOffset(1899, 12, 31, 23, 59, 59, TimeSpan.Zero) };
+        var preview = await Read<ClaimValidationDto>(await client.PostAsJsonAsync("/api/claims/validate", oldClaim, Json));
+        preview.CriticalIssues.ShouldContain(x => x.Field == "LossDate" && x.Code == "DD-41");
+        var create = await client.PostAsJsonAsync("/api/claims", oldClaim, Json);
+        create.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        var createBody = await create.Content.ReadFromJsonAsync<JsonElement>();
+        createBody.GetProperty("errors").TryGetProperty("LossDate", out _).ShouldBeTrue();
     }
 
     [SqlServerFact]

@@ -278,3 +278,7 @@ These questions do not override DD-01 through DD-31. STOP and report them when t
 
 The user-supplied [DD-32 through DD-40 addendum](DESIGN-DECISIONS-addendum.md) resolves the corresponding questions above and takes precedence where explicit. The four Prompt 4 clarifications remain accepted. Prompt 5 implementation details and verification are recorded in [PERSISTENCE.md](PERSISTENCE.md).
 
+## DD-41
+
+User-entered and API-filter dates are limited to 1900-01-01 through 2100-12-31, while FNOL loss dates also remain subject to BR-C-01's no-future rule, because explicit bounds prevent unsupported years from reaching date parsing or database operations.
+

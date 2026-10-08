@@ -8,6 +8,22 @@ import { createLossForm } from './fnol-forms';
 import { LossStepComponent } from './loss-step.component';
 
 describe('Loss step policy lookup', () => {
+  it('sets date input bounds and renders the range error', () => {
+    TestBed.configureTestingModule({ imports: [LossStepComponent], providers: [provideNoopAnimations(),
+      { provide: PoliciesApiService, useValue: { search: () => of([]) } },
+      { provide: ReferenceApiService, useValue: { causes: () => of([]) } }] });
+    const fixture = TestBed.createComponent(LossStepComponent), component = fixture.componentInstance;
+    component.form = createLossForm();
+    component.form.controls.lossDate.setValue('222222-02-22T10:00');
+    component.form.controls.lossDate.markAsTouched();
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input.min).toBe('1900-01-01T00:00');
+    expect(input.max).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(fixture.nativeElement.textContent).toContain('Enter a date between 1900 and 2100.');
+    fixture.destroy();
+  });
+
   it('F12 recovers after a failed search on the next query', fakeAsync(() => {
     const policy = { id: 'policy', policyNumber: 'POL-1', clientName: 'Client' } as Policy;
     const api = jasmine.createSpyObj<PoliciesApiService>('PoliciesApiService', ['search']);

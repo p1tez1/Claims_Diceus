@@ -2,6 +2,7 @@ using ClaimsModule.Application.Claims;
 using ClaimsModule.Application.Documents;
 using ClaimsModule.Application.Models;
 using ClaimsModule.Domain.Enums;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,10 +46,23 @@ public sealed class ClaimsController(ISender sender) : ControllerBase
     [ProducesResponseType<PageDto<ClaimListItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<PageDto<ClaimListItemDto>>> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
-        [FromQuery] ClaimStatus[]? status = null, [FromQuery] DateTimeOffset? dateFrom = null, [FromQuery] DateTimeOffset? dateTo = null,
+        [FromQuery] ClaimStatus[]? status = null, [FromQuery] string? dateFrom = null, [FromQuery] string? dateTo = null,
         [FromQuery] Guid? assignedHandlerId = null, [FromQuery] string? causeOfLossCode = null, [FromQuery] Guid? policyId = null,
         [FromQuery] string? search = null, CancellationToken token = default) =>
-        Ok(await sender.Send(new ListClaimsQuery(page, pageSize, status, dateFrom, dateTo, assignedHandlerId, causeOfLossCode, policyId, search), token));
+        Ok(await sender.Send(new ListClaimsQuery(page, pageSize, status, ParseDateFilter(dateFrom, "DateFrom"),
+            ParseDateFilter(dateTo, "DateTo"), assignedHandlerId, causeOfLossCode, policyId, search), token));
+
+    private static DateTimeOffset? ParseDateFilter(string? value, string field)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (DateTimeOffset.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.AssumeUniversal, out var result))
+            return result;
+        if (System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{5,}-\d{2}-\d{2}"))
+            throw new ValidationException([new FluentValidation.Results.ValidationFailure(field,
+                field == "DateFrom" ? "Date from must be between 1900-01-01 and 2100-12-31." : "Date to must be between 1900-01-01 and 2100-12-31.")]);
+        throw new ModelBindingException(new() { [field] = [$"The value '{value}' is not a valid date."] });
+    }
 
     /// <summary>List the immutable audit history for a claim.</summary>
     [HttpGet("{id:guid}/audit")]

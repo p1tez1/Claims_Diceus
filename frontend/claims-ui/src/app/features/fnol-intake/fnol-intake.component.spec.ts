@@ -45,6 +45,15 @@ describe('FNOL intake', () => {
     component.next(1); expect(stepper.next).toHaveBeenCalledTimes(2);
   });
 
+  it('does not validate or create when the loss year is out of range', () => {
+    component.loss.controls.lossDate.setValue('222222-02-22T10:00');
+    component.create();
+    expect(component.loss.controls.lossDate.hasError('dateRange')).toBeTrue();
+    expect(api.validate).not.toHaveBeenCalled();
+    expect(api.create).not.toHaveBeenCalled();
+    expect(stepper.selectedIndex).toBe(0);
+  });
+
   it('requires confirmation for dry-run warnings before submitting', () => {
     const answer = new Subject<boolean>();
     api.validate.and.returnValue(of({ criticalIssues: [], warnings: [{ field: 'PolicyId', code: 'BR-C-06', message: 'No policy linked' }] }));

@@ -25,6 +25,8 @@ public sealed class LossEvent
         ArgumentNullException.ThrowIfNull(clock);
         if (lossDate == default || lossDate > clock.UtcNow)
             throw new DomainRuleViolationException("BR-C-01", "Loss date is required and cannot be in the future.");
+        if (lossDate.Date < new DateTime(1900, 1, 1))
+            throw new DomainRuleViolationException("DD-41", "Loss date cannot be earlier than 1900-01-01.");
         if (string.IsNullOrWhiteSpace(description) || description.Trim().Length < 20)
             throw new DomainRuleViolationException("BR-C-07", "Loss description is required and must be at least 20 characters.");
         if (string.IsNullOrWhiteSpace(causeOfLossCode) || !causeOfLossIsActive)

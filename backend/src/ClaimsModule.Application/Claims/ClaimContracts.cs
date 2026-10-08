@@ -5,6 +5,12 @@ using MediatR;
 
 namespace ClaimsModule.Application.Claims;
 
+public static class ClaimDateBounds
+{
+    public static readonly DateTimeOffset Minimum = new(1900, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    public static readonly DateTimeOffset Maximum = new(2100, 12, 31, 23, 59, 59, TimeSpan.Zero);
+}
+
 public sealed record PartyInput
 {
     public PartyRole Role { get; init; }

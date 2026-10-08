@@ -46,7 +46,9 @@ public sealed class CreateClaimCommandValidator : AbstractValidator<CreateClaimC
 {
     public CreateClaimCommandValidator(IClock clock, IReferenceDataQueries reference, IPolicyQueries policies, IMapper mapper)
     {
-        RuleFor(x => x.LossDate).NotEmpty().WithMessage("Loss date is required.").WithErrorCode("BR-C-01")
+        RuleFor(x => x.LossDate).Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Loss date is required.").WithErrorCode("BR-C-01")
+            .Must(x => x.Date >= ClaimDateBounds.Minimum.Date).WithMessage("Loss date cannot be earlier than 1900-01-01.").WithErrorCode("DD-41")
             .LessThanOrEqualTo(_ => clock.UtcNow).WithMessage("Loss date cannot be in the future.").WithErrorCode("BR-C-01");
         RuleFor(x => x.LossDescription).Must(x => !string.IsNullOrWhiteSpace(x) && x.Trim().Length >= 20)
             .WithMessage("Loss description is required and must be at least 20 characters.").WithErrorCode("BR-C-07");
@@ -162,10 +164,18 @@ public sealed class ListClaimsQueryValidator : AbstractValidator<ListClaimsQuery
         RuleFor(x => x.Page).InclusiveBetween(1, int.MaxValue / 100);
         RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
         RuleForEach(x => x.Status).IsInEnum();
-        RuleFor(x => x.DateTo).GreaterThanOrEqualTo(x => x.DateFrom).When(x => x.DateFrom.HasValue && x.DateTo.HasValue);
+        RuleFor(x => x.DateFrom).Must(IsWithinSupportedRange).When(x => x.DateFrom.HasValue)
+            .WithMessage("Date from must be between 1900-01-01 and 2100-12-31.");
+        RuleFor(x => x.DateTo).Must(IsWithinSupportedRange).When(x => x.DateTo.HasValue)
+            .WithMessage("Date to must be between 1900-01-01 and 2100-12-31.");
+        RuleFor(x => x.DateTo).GreaterThanOrEqualTo(x => x.DateFrom).When(x => x.DateFrom.HasValue && x.DateTo.HasValue)
+            .WithMessage("Date from must not be after date to.");
         RuleFor(x => x.Search).MaximumLength(255);
         RuleFor(x => x.CauseOfLossCode).MaximumLength(50);
     }
+
+    private static bool IsWithinSupportedRange(DateTimeOffset? value) => value is null ||
+        value.Value.Date >= ClaimDateBounds.Minimum.Date && value.Value.Date <= ClaimDateBounds.Maximum.Date;
 }
 
 public sealed class GetClaimAuditQueryValidator : AbstractValidator<GetClaimAuditQuery>

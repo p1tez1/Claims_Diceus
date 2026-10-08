@@ -4,11 +4,21 @@ import { buildClaimRequest, createLossForm, createPartiesForm, createReviewForm,
 describe('FNOL step forms', () => {
   it('rejects future loss dates and descriptions shorter than 20 trimmed characters', () => {
     const form = createLossForm();
-    form.patchValue({ unknownPolicy: true, lossDate: '2999-01-01T10:00', causeOfLossCode: 'FIRE', lossDescription: '   short description  ' });
+    form.patchValue({ unknownPolicy: true, lossDate: '2099-01-01T10:00', causeOfLossCode: 'FIRE', lossDescription: '   short description  ' });
     expect(form.controls.lossDate.hasError('futureDate')).toBeTrue();
     expect(form.controls.lossDescription.hasError('minDescription')).toBeTrue();
     form.patchValue({ lossDate: '2026-01-01T10:00', lossDescription: 'A detailed loss description.' });
     expect(form.valid).toBeTrue();
+  });
+
+  it('rejects loss dates outside the supported year range', () => {
+    const form = createLossForm();
+    form.controls.lossDate.setValue('222222-02-22T10:00');
+    expect(form.controls.lossDate.hasError('dateRange')).toBeTrue();
+    form.controls.lossDate.setValue('1899-12-31T23:59');
+    expect(form.controls.lossDate.hasError('dateRange')).toBeTrue();
+    form.controls.lossDate.setValue('2101-01-01T00:00');
+    expect(form.controls.lossDate.hasError('dateRange')).toBeTrue();
   });
 
   it('requires a selected policy or Unknown Policy and at least one claimant', () => {

@@ -65,6 +65,7 @@ public sealed class ClaimUseCaseTests
     {
         var valid = Valid();
         yield return [valid with { LossDate = default }, "LossDate"];
+        yield return [valid with { LossDate = new DateTimeOffset(1899, 12, 31, 23, 59, 59, TimeSpan.Zero) }, "LossDate"];
         yield return [valid with { LossDate = Now.AddSeconds(1) }, "LossDate"];
         yield return [valid with { LossDescription = "Too short" }, "LossDescription"];
         yield return [valid with { LossDescription = new string(' ', 30) }, "LossDescription"];
@@ -222,6 +223,20 @@ public sealed class ClaimUseCaseTests
         var claim = await Create();
         audit.ListAsync(claim.Id, Arg.Any<PageRequest>(), Arg.Any<CancellationToken>()).Returns(new PageDto<AuditLogDto>([], 0, 2, 3));
         (await new GetClaimAuditQueryHandler(_claims, audit).Handle(new(claim.Id, 2, 3), CancellationToken.None)).Page.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task ClaimListDateValidatorEnforcesBoundsAndOrdering()
+    {
+        var validator = new ListClaimsQueryValidator();
+        (await validator.ValidateAsync(new ListClaimsQuery(DateFrom: ClaimDateBounds.Minimum, DateTo: ClaimDateBounds.Maximum))).IsValid.ShouldBeTrue();
+
+        var tooEarly = await validator.ValidateAsync(new ListClaimsQuery(DateFrom: ClaimDateBounds.Minimum.AddTicks(-1)));
+        tooEarly.Errors.ShouldContain(x => x.PropertyName == "DateFrom");
+        var tooLate = await validator.ValidateAsync(new ListClaimsQuery(DateTo: ClaimDateBounds.Maximum.AddDays(1)));
+        tooLate.Errors.ShouldContain(x => x.PropertyName == "DateTo");
+        var reversed = await validator.ValidateAsync(new ListClaimsQuery(DateFrom: Now, DateTo: Now.AddDays(-1)));
+        reversed.Errors.ShouldContain(x => x.PropertyName == "DateTo" && x.ErrorMessage == "Date from must not be after date to.");
     }
 
     [Fact]

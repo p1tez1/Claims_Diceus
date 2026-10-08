@@ -12,6 +12,7 @@ import { CauseOfLoss, Policy } from '../../core/models/api.models';
 import { PoliciesApiService } from '../../core/services/policies-api.service';
 import { ReferenceApiService } from '../../core/services/reference-api.service';
 import { LossForm, inForce } from './fnol-forms';
+import { localDateTimeInputValue, MIN_USER_DATE } from '../../shared/validation/date.validators';
 
 @Component({ selector: 'app-loss-step', standalone: true,
   imports: [DatePipe, ReactiveFormsModule, MatAutocomplete, MatAutocompleteTrigger, MatFormField, MatHint, MatError, MatLabel, MatInput, MatOption, MatSlideToggle],
@@ -36,9 +37,10 @@ import { LossForm, inForce } from './fnol-forms';
         @if (form.controls.lossDate.value) { <span class="force-badge" [class.outside]="!policyInForce()">{{ policyInForce() ? 'In force on loss date' : 'Outside policy period' }}</span> }
       </div> }
     }
-    <mat-form-field><mat-label>Loss date and time</mat-label><input matInput type="datetime-local" formControlName="lossDate">
+    <mat-form-field><mat-label>Loss date and time</mat-label><input matInput type="datetime-local" formControlName="lossDate" [min]="minLossDate" [max]="maxLossDate">
       @if (form.controls.lossDate.hasError('required')) { <mat-error>Loss date and time are required.</mat-error> }
-      @if (form.controls.lossDate.hasError('futureDate')) { <mat-error>Loss date cannot be in the future.</mat-error> }
+      @else if (form.controls.lossDate.hasError('dateRange')) { <mat-error>Enter a date between 1900 and 2100.</mat-error> }
+      @else if (form.controls.lossDate.hasError('futureDate')) { <mat-error>Loss date cannot be in the future.</mat-error> }
       @if (serverErrors['LossDate']) { <mat-error>{{ serverErrors['LossDate'][0] }}</mat-error> }
     </mat-form-field>
     <mat-form-field><mat-label>Cause of loss</mat-label><input matInput formControlName="causeSearch" [matAutocomplete]="causeOptions" autocomplete="off">
@@ -73,6 +75,8 @@ export class LossStepComponent {
   readonly selectedPolicy = signal<Policy | null>(null);
   readonly filteredCauses = signal<CauseOfLoss[]>([]);
   readonly policySearchError = signal(false);
+  readonly minLossDate = `${MIN_USER_DATE}T00:00`;
+  readonly maxLossDate = localDateTimeInputValue(new Date());
   ngOnInit(): void {
     this.referenceApi.causes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(causes => { this.causes.set(causes); this.filteredCauses.set(causes); });
     this.form.controls.policySearch.valueChanges.pipe(debounceTime(300), distinctUntilChanged(), switchMap(query => {

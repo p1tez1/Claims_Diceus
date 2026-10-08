@@ -63,6 +63,22 @@ describe('ClaimsListComponent', () => {
     expect(component.filters.controls.dateTo.value).toBe('2026-01-31');
   });
 
+  it('does not call the service for an invalid date range', () => {
+    claims.list.calls.reset();
+    queryParams.next(convertToParamMap({ dateFrom: '2026-02-23', dateTo: '2026-02-22' }));
+    expect(claims.list).not.toHaveBeenCalled();
+    expect(component.filters.hasError('dateRangeOrder')).toBeTrue();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Loss date from must not be after loss date to.');
+  });
+
+  it('does not call the service for a date with an out-of-range year', () => {
+    claims.list.calls.reset();
+    queryParams.next(convertToParamMap({ dateFrom: '222222-02-22' }));
+    expect(claims.list).not.toHaveBeenCalled();
+    expect(component.filters.controls.dateFrom.hasError('dateRange')).toBeTrue();
+  });
+
   it('F10 recomputes assignee options as the search text changes', () => {
     expect(component.filteredUsers().length).toBe(1);
     component.filters.controls.assignedHandler.setValue('no match');

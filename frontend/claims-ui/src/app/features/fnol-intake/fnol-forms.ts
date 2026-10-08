@@ -1,11 +1,12 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { CreateClaimRequest, PartyInput, ReserveComponentType, RiskObjectInput } from '../../core/models/api.models';
+import { parseStrictDateInput, userDateRangeValidator } from '../../shared/validation/date.validators';
 
 export const futureDate: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const value = control.value as string;
   if (!value) return null;
-  const time = Date.parse(value);
-  return Number.isNaN(time) || time > Date.now() ? { futureDate: true } : null;
+  const date = parseStrictDateInput(value);
+  return date && date.getTime() > Date.now() ? { futureDate: true } : null;
 };
 export const minDescription: ValidatorFn = (control: AbstractControl): ValidationErrors | null =>
   (control.value as string).trim().length >= 20 ? null : { minDescription: true };
@@ -30,7 +31,7 @@ export function createLossForm() {
     policySearch: new FormControl('', { nonNullable: true }),
     policyId: new FormControl('', { nonNullable: true }),
     unknownPolicy: new FormControl(false, { nonNullable: true }),
-    lossDate: new FormControl('', { nonNullable: true, validators: [Validators.required, futureDate] }),
+    lossDate: new FormControl('', { nonNullable: true, validators: [Validators.required, userDateRangeValidator, futureDate] }),
     causeSearch: new FormControl('', { nonNullable: true }),
     causeOfLossCode: new FormControl('', { nonNullable: true, validators: Validators.required }),
     lossDescription: new FormControl('', { nonNullable: true, validators: [Validators.required, minDescription] }),

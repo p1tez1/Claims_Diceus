@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { MatTable, MatColumnDef, MatHeaderCell, MatHeaderCellDef, MatCell, MatCellDef, MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef } from '@angular/material/table';
@@ -17,14 +17,16 @@ import { UsersApiService } from '../../core/services/users-api.service';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { LoadingIndicatorComponent } from '../../shared/loading/loading-indicator.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
+import { dateRangeOrderValidator, MAX_USER_DATE, MIN_USER_DATE, userDateRangeValidator } from '../../shared/validation/date.validators';
 
 const claimStatuses: ClaimStatus[] = ['Draft', 'Open', 'UnderInvestigation', 'PendingPayment', 'Closed', 'Reopened', 'Withdrawn'];
 
-@Component({ selector: 'app-claims-list', standalone: true, imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, DatePipe, NgFor, MatButton, MatFormField, MatLabel, MatInput, MatSelect, MatOption, MatAutocomplete, MatAutocompleteTrigger, MatTable, MatColumnDef, MatHeaderCell, MatHeaderCellDef, MatCell, MatCellDef, MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, EmptyStateComponent, LoadingIndicatorComponent, StatusBadgeComponent], templateUrl: './claims-list.component.html', styleUrl: './claims-list.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-claims-list', standalone: true, imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, DatePipe, NgFor, MatButton, MatFormField, MatLabel, MatError, MatInput, MatSelect, MatOption, MatAutocomplete, MatAutocompleteTrigger, MatTable, MatColumnDef, MatHeaderCell, MatHeaderCellDef, MatCell, MatCellDef, MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, EmptyStateComponent, LoadingIndicatorComponent, StatusBadgeComponent], templateUrl: './claims-list.component.html', styleUrl: './claims-list.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class ClaimsListComponent {
   private readonly claimsApi = inject(ClaimsApiService); private readonly referenceApi = inject(ReferenceApiService); private readonly usersApi = inject(UsersApiService); private readonly route = inject(ActivatedRoute); private readonly router = inject(Router); private readonly destroyRef = inject(DestroyRef); private readonly fb = inject(FormBuilder);
   readonly statuses = claimStatuses; readonly causes = signal<{ code: string; name: string }[]>([]); readonly users = signal<User[]>([]); readonly rows = signal<ClaimListItem[]>([]); readonly totalCount = signal(0); readonly loading = signal(true); readonly displayedColumns = ['claimNumber', 'policyNumber', 'clientName', 'lossDate', 'causeOfLoss', 'status', 'totalReserves'];
-  readonly filters = this.fb.nonNullable.group({ status: this.fb.nonNullable.control<ClaimStatus[]>([]), dateFrom: '', dateTo: '', assignedHandler: this.fb.nonNullable.control<string | User>(''), causeOfLossCode: '', search: '' });
+  readonly minDate = MIN_USER_DATE; readonly maxDate = MAX_USER_DATE;
+  readonly filters = this.fb.nonNullable.group({ status: this.fb.nonNullable.control<ClaimStatus[]>([]), dateFrom: this.fb.nonNullable.control('', userDateRangeValidator), dateTo: this.fb.nonNullable.control('', userDateRangeValidator), assignedHandler: this.fb.nonNullable.control<string | User>(''), causeOfLossCode: '', search: '' }, { validators: dateRangeOrderValidator('dateFrom', 'dateTo') });
   readonly loadError = signal(false);
   private readonly handlerSearch = signal('');
   private selectedHandlerId?: string;
@@ -45,6 +47,7 @@ export class ClaimsListComponent {
       this.currentFilters = this.filtersFromParams(params);
       this.patchForm(this.currentFilters);
       this.loading.set(true); this.loadError.set(false); this.rows.set([]); this.totalCount.set(0);
+      if (this.filters.invalid) { this.loading.set(false); return EMPTY; }
       return this.claimsApi.list({ ...this.currentFilters,
         dateFrom: this.utcDayBound(this.currentFilters.dateFrom, false),
         dateTo: this.utcDayBound(this.currentFilters.dateTo, true)
